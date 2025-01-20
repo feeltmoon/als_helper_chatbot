@@ -15,6 +15,7 @@ if not OPENAI_API_KEY:
 # Set the API key for OpenAI
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 
+
 # Initialize OpenAI client
 client = OpenAI()
 
@@ -89,6 +90,9 @@ def chatbot_interaction(messages, database_schema_string):
                             "type": "string",
                             "description": f"""
                                 SQL query extracting info to answer the user's question.
+                                If the user specifies multiple values for a table, use `WHERE column_name IN ('value1', 'value2')`.
+                                For example:
+                                - For multiple values in one table: SELECT * FROM table_name WHERE column_name IN ('value1', 'value2');
                                 SQL should be written using this database schema:
                                 {database_schema_string}
                                 The query should be returned in plain text, not in JSON.
@@ -217,7 +221,7 @@ def query_chatbot():
             try:
                 # Construct minimal valid context for GPT
                 context_messages = [
-                    {"role": "system", "content": "You are a helpful assistant with database capabilities."},
+                    {"role": "system", "content": "You are a helpful assistant with database capabilities. When the user asks for multiple values, use SQL `IN` clauses for querying."},
                     {"role": "user", "content": user_input}
                 ]
 
@@ -240,6 +244,9 @@ def query_chatbot():
                     tool_call_id = tool_calls[0].id
                     tool_function_name = tool_calls[0].function.name
                     tool_query_string = json.loads(tool_calls[0].function.arguments)["query"]
+                    
+                    print(f"Generated SQL Query: {tool_query_string}")  # Log query for debugging
+                    st.markdown(f"### Generated SQL Query:\n```sql\n{tool_query_string}\n```")
 
                     if tool_function_name == "ask_database":
                         # Query the database
